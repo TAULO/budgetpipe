@@ -68,7 +68,7 @@ func Transactions(path string) ([]model.Transaction, error) {
 		amount, err := parseDanishAmount(record[2])
 
 		if err != nil {
-			fmt.Println("Error parsing amount:", err)
+			//fmt.Println("Error parsing amount:", err)
 			continue
 		}
 
@@ -115,7 +115,7 @@ func GetExpensesForCategory(transactionFile string, category string) float64 {
 	}
 
 	for _, transaction := range transactions {
-		if transaction.Category == category {
+		if strings.TrimSpace(transaction.Category) == category {
 			total += transaction.Amount
 		}
 	}

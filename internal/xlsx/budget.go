@@ -3,6 +3,7 @@ package xlsx
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/xuri/excelize/v2"
 )
@@ -26,14 +27,63 @@ func NewBudget(path string, sheet string) (*Budget, error) {
 	}, nil
 }
 
-func (b *Budget) WriteCellFloat(address string, value float64) {
-	b.workbook.SetCellFloat(b.sheet, address, value, 2, 64)
+func (b *Budget) WriteCellFloat(category string, date string, value float64) error {
+	address, err := b.dateCellAddressByCategory(category, date)
+	if err != nil {
+		return err
+	}
+
+	err = b.workbook.SetCellFloat(b.sheet, address, value, 2, 64)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *Budget) Save() error  { return b.workbook.Save() }
 func (b *Budget) Close() error { return b.workbook.Close() }
 
-func (b *Budget) DateCellAddressByCategory(category string, date string) (string, error) {
+func (b *Budget) GetCategories() ([]string, error) {
+	rows, err := b.workbook.GetRows(b.sheet)
+	if err != nil {
+		return nil, err
+	}
+
+	var categories []string
+	for i := 1; i < len(rows); i++ {
+		if len(rows[i]) == 0 {
+			continue
+		}
+		category := strings.TrimSpace(rows[i][0])
+		if category == "" {
+			continue
+		}
+
+		cell := fmt.Sprintf("A%d", i+1)
+		styleID, err := b.workbook.GetCellStyle(b.sheet, cell)
+		if err != nil {
+			return nil, err
+		}
+
+		style, err := b.workbook.GetStyle(styleID)
+		if err != nil {
+			return nil, err
+		}
+
+		// RULES:
+		// Skip section headers and totals — they're bold or italic.
+		// Real categories are plain text (no bold, no italic).
+		if style.Font != nil && (style.Font.Bold || style.Font.Italic) {
+			continue
+		}
+
+		categories = append(categories, category)
+	}
+	return categories, nil
+}
+
+func (b *Budget) dateCellAddressByCategory(category string, date string) (string, error) {
 	categoryCell, err := b.findCell(category)
 	if err != nil {
 		return "", err

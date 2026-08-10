@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -106,7 +107,7 @@ func GetTotalExpenses(transactionFile string) float64 {
 	return formatDanishAmount(int64(total))
 }
 
-func GetExpensesForCategory(transactionFile string, category string) float64 {
+func GetTotalAmountForCategory(transactionFile string, categories []string) float64 {
 	var total int64
 	transactions, err := Transactions(transactionFile)
 
@@ -115,7 +116,7 @@ func GetExpensesForCategory(transactionFile string, category string) float64 {
 	}
 
 	for _, transaction := range transactions {
-		if strings.TrimSpace(transaction.Category) == category {
+		if slices.Contains(categories, strings.TrimSpace(transaction.Category)) {
 			total += transaction.Amount
 		}
 	}

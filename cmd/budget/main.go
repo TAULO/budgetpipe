@@ -3,25 +3,28 @@ package main
 import (
 	"budgetpipe/internal/csv"
 	"budgetpipe/internal/xlsx"
+	"encoding/json"
 	"fmt"
+	"os"
 )
+
+type Mapper struct {
+	Expenses map[string][]string `json:"expenses"`
+	Income   map[string][]string `json:"income"`
+}
 
 const csvTestPath = "./data/test.csv"
 const xlsxTestPath = "./data/test.xlsx"
 
 func main() {
-	// xlsx (Kategori) -> csv (Kategori)
-	categoryMap := map[string]string{
-		"Daglivarer":          "Dagligvarer",
-		"Byen / Cafe":         "Koncert, biograf og museum",
-		"Transport":           "Taxa og offentlig transport",
-		"Andet (Overførelse)": "Andet (Overførsel)",
-		"Abonnementer":        "Film, musik, apps og software",
-		"Internet og Telefon": "Telefon, internet, streaming og TV",
-		"El (NRGI)":           "El",
-		"A-kasse":             "Fagforening, A-kasse og lønsikring",
-		"Fitness":             "Sport og fritidsaktiviteter",
-		"Andet (Diverse)":     "Lån og gæld (Andet)",
+	data, err := os.ReadFile("cmd/budget/mapper.json")
+	if err != nil {
+		panic(err)
+	}
+	var mapper Mapper
+	err = json.Unmarshal(data, &mapper)
+	if err != nil {
+		panic(err)
 	}
 
 	workbook, err := xlsx.NewBudget(xlsxTestPath, "Sheet1")
@@ -36,9 +39,17 @@ func main() {
 	}
 
 	for _, category := range categories {
-		expense := csv.GetExpensesForCategory(csvTestPath, categoryMap[category])
-		workbook.WriteCellFloat(category, "August", expense*-1)
-		fmt.Println(category, expense, err)
+		expenses := mapper.Expenses[category]
+		incomes := mapper.Income[category]
+		allCategories := append(expenses, incomes...)
+
+		amount := csv.GetTotalAmountForCategory(csvTestPath, allCategories)
+		if amount < 0 {
+			amount *= -1
+		}
+		var _ = workbook.WriteCellFloat(category, "August", amount)
+
+		fmt.Println(category, incomes)
 	}
 
 	workbook.Save()

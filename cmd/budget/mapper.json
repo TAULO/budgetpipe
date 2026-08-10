@@ -1,0 +1,29 @@
+{
+  "expenses": {
+    "Husleje": ["Husleje"],
+    "A-kasse": ["Fagforening, A-kasse og lønsikring"],
+    "Internet og Telefon": ["Telefon, internet, streaming og TV"],
+    "Varme (kredsløb)": ["Varme"],
+    "Fitness": ["Sport og fritidsaktiviteter"],
+    "El (NRGI)": ["El"],
+    "Vand (Aarhus vand)": ["Vand"],
+    "Abonnementer": ["Film, musik, apps og software"],
+    "Indboforsikring": ["Indboforsikring"],
+    "Daglivarer": ["Dagligvarer"],
+    "Byen / Cafe": ["Café, restaurant og bar"],
+    "Transport": ["Taxa og offentlig transport"],
+    "Andet (Overførelse)": ["Andet (Overførsel)"],
+    "Takeaway / fast food": ["Take away og fast food"],
+    "Cykel (reparationer, udstyr mv.)": ["Cykler og andet udstyr"],
+    "Bøger": ["Aviser, blade og bøger"],
+    "Tøj, sko og accessories": ["Tøj, sko og accessories"],
+    "Ferie": ["Ferie og rejser"],
+    "Indskud til Nordnet": ["Opsparing og investering (Andet)"],
+    "Andet (Diverse)": ["Koncert, biograf og museum", "Vedligeholdelse", "Hår- og hudpleje", "Service og reparation", "Renter og gebyrer", "Specialbutik", "Kæledyr", "Elektronik og gadgets", "Skole-, uddannelses- og kursusudgifter"]
+  },
+  "income": {
+    "Løn": ["Løn, dagpenge og pension"],
+    "Andet (Overførelse)": ["Anden indtægt"],
+    "Andet (Diverse)": ["Renter og afkast"]
+  }
+}

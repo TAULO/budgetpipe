@@ -13,7 +13,7 @@ type Mapper struct {
 	Income   map[string][]string `json:"income"`
 }
 
-const month = "Januar"
+const month = "august"
 const csvTestPath = "./data/csv/" + month + ".csv"
 
 const xlsxTestPath = "./data/test.xlsx"

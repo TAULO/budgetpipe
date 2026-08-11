@@ -3,7 +3,6 @@ package csv
 import (
 	"encoding/csv"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"os"
@@ -45,13 +44,11 @@ func Transactions(path string) ([]model.Transaction, error) {
 		amount, err := parseDanishAmount(record[2])
 
 		if err != nil {
-			//fmt.Println("Error parsing amount:", err)
 			continue
 		}
 
 		date, err := time.Parse("02.01.2006", record[0])
 		if err != nil {
-			fmt.Println("Error parsing date:", err)
 			continue
 		}
 
@@ -75,10 +72,6 @@ func ValidateTransactions(transactions []model.Transaction) error {
 
 	first := transactions[0]
 	last := transactions[len(transactions)-1]
-
-	if last.Date.After(first.Date) {
-		return errors.New("transactions are not in chronological order")
-	}
 
 	if first.Date.Month() != last.Date.Month() {
 		return errors.New("transactions includes different months")

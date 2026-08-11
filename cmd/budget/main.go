@@ -13,9 +13,10 @@ type Mapper struct {
 	Income   map[string][]string `json:"income"`
 }
 
-const csvTestPath = "./data/test.csv"
-const xlsxTestPath = "./data/test.xlsx"
 const month = "Januar"
+const csvTestPath = "./data/csv/" + month + ".csv"
+
+const xlsxTestPath = "./data/test.xlsx"
 
 func main() {
 	err := Run()
@@ -67,7 +68,6 @@ func Run() error {
 
 	for category, bankCats := range mapper.Income {
 		income := csv.TotalForCategories(transactions, bankCats)
-		fmt.Println(category, income)
 		if err := write(category, income); err != nil {
 			return err
 		}

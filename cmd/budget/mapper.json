@@ -18,8 +18,7 @@
     "Bøger": ["Aviser, blade og bøger"],
     "Tøj, sko og accessories": ["Tøj, sko og accessories"],
     "Ferie": ["Ferie og rejser"],
-    "Indskud til Nordnet": ["Opsparing og investering (Andet)"],
-    "Andet (Diverse)": ["Koncert, biograf og museum", "Vedligeholdelse", "Hår- og hudpleje", "Service og reparation", "Renter og gebyrer", "Specialbutik", "Kæledyr", "Elektronik og gadgets", "Skole-, uddannelses- og kursusudgifter", "Fritid (Andet)", "Gaver og velgørenhed"]
+    "Indskud til Nordnet": ["Opsparing og investering (Andet)"]
   },
   "income": {
     "Løn": ["Løn, dagpenge og pension"],

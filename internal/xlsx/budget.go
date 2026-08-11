@@ -1,7 +1,6 @@
 package xlsx
 
 import (
-	"budgetpipe/internal/model"
 	"fmt"
 	"regexp"
 	"strings"
@@ -28,20 +27,6 @@ func NewBudget(path string, sheet string) (*Budget, error) {
 	}, nil
 }
 
-func (b *Budget) WriteCellTransaction(category string, date string, transaction model.Transaction) error {
-	address, err := b.dateCellAddressByCategory(category, date)
-	if err != nil {
-		return err
-	}
-
-	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(transaction.Amount), 2, 64)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (b *Budget) WriteCellFloat(category string, date string, value int64) error {
 	address, err := b.dateCellAddressByCategory(category, date)
 	if err != nil {
@@ -49,6 +34,32 @@ func (b *Budget) WriteCellFloat(category string, date string, value int64) error
 	}
 
 	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(value), 2, 64)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *Budget) WriteCellFloatWithComment(category string, date string, value int64, comment string) error {
+	address, err := b.dateCellAddressByCategory(category, date)
+	if err != nil {
+		return err
+	}
+
+	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(value), 2, 64)
+	if err != nil {
+		return err
+	}
+
+	err = b.workbook.AddComment(b.sheet, excelize.Comment{
+		Author: "Budget",
+		Cell:   address,
+		Text:   comment,
+		Height: 100,
+		Width:  400,
+	})
+
 	if err != nil {
 		return err
 	}

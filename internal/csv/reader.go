@@ -18,7 +18,7 @@ import (
 import "budgetpipe/internal/model"
 
 type Reader struct {
-	Transactions []model.Transaction
+	transactions []model.Transaction
 	reader       *csv.Reader
 }
 
@@ -44,12 +44,12 @@ func NewReader(path string) (*Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.Transactions = transactions
+	r.transactions = transactions
 	return r, nil
 }
 
 func (r *Reader) ValidateTransactions() error {
-	transactions := r.Transactions
+	transactions := r.transactions
 
 	if len(transactions) == 0 {
 		return errors.New("no transactions found")
@@ -65,14 +65,59 @@ func (r *Reader) ValidateTransactions() error {
 	return nil
 }
 
-func (r *Reader) TotalForCategories(categories []string) int64 {
-	var total int64
-	for _, t := range r.Transactions {
-		if slices.Contains(categories, strings.TrimSpace(t.Category)) {
-			total += t.Amount
+func (r *Reader) Transactions() []model.Transaction {
+	return r.transactions
+}
+
+func (r *Reader) TransactionsByCategories(categories []string) []model.Transaction {
+	var transactions []model.Transaction
+
+	for _, t := range r.transactions {
+		category := strings.TrimSpace(t.Category)
+
+		if slices.Contains(categories, category) {
+			transactions = append(transactions, t)
 		}
 	}
+
+	return transactions
+}
+
+func (r *Reader) Total(transactions []model.Transaction) int64 {
+	var total int64
+
+	for _, transaction := range transactions {
+		total += transaction.Amount
+	}
+
 	return total
+}
+
+func (r *Reader) Comments(transactions []model.Transaction) []string {
+	var comments []string
+
+	for _, transaction := range transactions {
+		comments = append(comments, transaction.Comment)
+	}
+
+	return comments
+}
+
+func (r *Reader) UnmappedComments(transactions []model.Transaction) string {
+	var comments []string
+
+	for _, transaction := range transactions {
+		comments = append(
+			comments,
+			fmt.Sprintf(
+				"• %s: %.2f kr.",
+				transaction.Category,
+				formatDanishAmount(transaction.Amount),
+			),
+		)
+	}
+
+	return strings.Join(comments, "\n")
 }
 
 func (r *Reader) parse() ([]model.Transaction, error) {
@@ -105,6 +150,7 @@ func (r *Reader) parse() ([]model.Transaction, error) {
 			Date:     date,
 			Amount:   amount,
 			Category: record[8],
+			Comment:  record[9],
 		}
 
 		transactions = append(transactions, transaction)
@@ -129,4 +175,8 @@ func parseDanishAmount(value string) (int64, error) {
 	}
 
 	return int64(math.Round(amount * 100)), nil
+}
+
+func formatDanishAmount(danishCent int64) float64 {
+	return float64(danishCent) / 100
 }

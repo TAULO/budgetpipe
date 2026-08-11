@@ -7,4 +7,5 @@ type Transaction struct {
 	Date     time.Time
 	Amount   int64
 	Category string
+	Comment  string
 }

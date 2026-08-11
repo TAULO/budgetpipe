@@ -43,42 +43,36 @@ func Run() error {
 	}
 	defer workbook.Close()
 
-	transactions, err := csv.Transactions(csvTestPath)
+	reader, err := csv.NewReader(csvTestPath)
 	if err != nil {
 		return fmt.Errorf("reading transactions: %w", err)
 	}
 
-	if err := csv.ValidateTransactions(transactions); err != nil {
+	if err := reader.ValidateTransactions(); err != nil {
 		return err
 	}
 
 	write := func(category string, amount int64) error {
-		if err := workbook.WriteCellFloat(category, month, formatDanishAmount(amount)); err != nil {
+		if err := workbook.WriteCellFloat(category, month, amount); err != nil {
 			return fmt.Errorf("writing %s: %w", category, err)
 		}
 		return nil
 	}
 
 	for category, bankCats := range mapper.Expenses {
-		expense := csv.TotalForCategories(transactions, bankCats)
+		expense := reader.TotalForCategories(bankCats)
 		if err := write(category, -expense); err != nil {
 			return err
 		}
 	}
-
 	for category, bankCats := range mapper.Income {
-		income := csv.TotalForCategories(transactions, bankCats)
+		income := reader.TotalForCategories(bankCats)
 		if err := write(category, income); err != nil {
 			return err
 		}
 	}
 
-	workbook.Save()
-	workbook.Close()
+	_ = workbook.Save()
 
 	return nil
-}
-
-func formatDanishAmount(danishCent int64) float64 {
-	return float64(danishCent) / 100
 }

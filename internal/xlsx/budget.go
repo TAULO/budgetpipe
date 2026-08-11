@@ -1,6 +1,7 @@
 package xlsx
 
 import (
+	"budgetpipe/internal/model"
 	"fmt"
 	"regexp"
 	"strings"
@@ -27,13 +28,27 @@ func NewBudget(path string, sheet string) (*Budget, error) {
 	}, nil
 }
 
-func (b *Budget) WriteCellFloat(category string, date string, value float64) error {
+func (b *Budget) WriteCellTransaction(category string, date string, transaction model.Transaction) error {
 	address, err := b.dateCellAddressByCategory(category, date)
 	if err != nil {
 		return err
 	}
 
-	err = b.workbook.SetCellFloat(b.sheet, address, value, 2, 64)
+	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(transaction.Amount), 2, 64)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *Budget) WriteCellFloat(category string, date string, value int64) error {
+	address, err := b.dateCellAddressByCategory(category, date)
+	if err != nil {
+		return err
+	}
+
+	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(value), 2, 64)
 	if err != nil {
 		return err
 	}
@@ -119,4 +134,8 @@ func (b *Budget) findCell(value string) (string, error) {
 	}
 
 	return cells[0], nil
+}
+
+func formatDanishAmount(danishCent int64) float64 {
+	return float64(danishCent) / 100
 }

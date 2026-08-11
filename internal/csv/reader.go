@@ -3,6 +3,7 @@ package csv
 import (
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"os"
@@ -16,9 +17,57 @@ import (
 
 import "budgetpipe/internal/model"
 
-func TotalForCategories(transactions []model.Transaction, categories []string) int64 {
+type Reader struct {
+	Transactions []model.Transaction
+	reader       *csv.Reader
+}
+
+// Options TODO: Add to parser in the future
+type Options struct {
+	categoryIndex int
+	amountIndex   int
+	commentIndex  int
+}
+
+func NewReader(path string) (*Reader, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	cr := csv.NewReader(file)
+	cr.Comma = ';'
+
+	r := &Reader{reader: cr}
+	transactions, err := r.parse()
+	if err != nil {
+		return nil, err
+	}
+	r.Transactions = transactions
+	return r, nil
+}
+
+func (r *Reader) ValidateTransactions() error {
+	transactions := r.Transactions
+
+	if len(transactions) == 0 {
+		return errors.New("no transactions found")
+	}
+
+	first := transactions[0]
+	last := transactions[len(transactions)-1]
+
+	if first.Date.Month() != last.Date.Month() {
+		return errors.New("transactions includes different months")
+	}
+
+	return nil
+}
+
+func (r *Reader) TotalForCategories(categories []string) int64 {
 	var total int64
-	for _, t := range transactions {
+	for _, t := range r.Transactions {
 		if slices.Contains(categories, strings.TrimSpace(t.Category)) {
 			total += t.Amount
 		}
@@ -26,19 +75,18 @@ func TotalForCategories(transactions []model.Transaction, categories []string) i
 	return total
 }
 
-func Transactions(path string) ([]model.Transaction, error) {
-	reader, err := readCSVFile(path)
+func (r *Reader) parse() ([]model.Transaction, error) {
 	var transactions []model.Transaction
 
-	if err != nil {
-		return nil, err
-	}
-
 	for {
-		record, err := reader.Read()
+		record, err := r.reader.Read()
 
-		if err != nil || err == io.EOF {
+		if err == io.EOF {
 			break
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("reading CSV record: %w", err)
 		}
 
 		amount, err := parseDanishAmount(record[2])
@@ -65,21 +113,6 @@ func Transactions(path string) ([]model.Transaction, error) {
 	return transactions, nil
 }
 
-func ValidateTransactions(transactions []model.Transaction) error {
-	if len(transactions) == 0 {
-		return errors.New("no transactions found")
-	}
-
-	first := transactions[0]
-	last := transactions[len(transactions)-1]
-
-	if first.Date.Month() != last.Date.Month() {
-		return errors.New("transactions includes different months")
-	}
-
-	return nil
-}
-
 func parseDanishAmount(value string) (int64, error) {
 	value = strings.TrimSpace(value)
 
@@ -96,17 +129,4 @@ func parseDanishAmount(value string) (int64, error) {
 	}
 
 	return int64(math.Round(amount * 100)), nil
-}
-
-func readCSVFile(path string) (*csv.Reader, error) {
-	file, err := os.Open(path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	reader := csv.NewReader(file)
-	reader.Comma = ';'
-
-	return reader, err
 }

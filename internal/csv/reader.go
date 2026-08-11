@@ -2,6 +2,7 @@ package csv
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -65,6 +66,25 @@ func Transactions(path string) ([]model.Transaction, error) {
 	}
 
 	return transactions, nil
+}
+
+func ValidateTransactions(transactions []model.Transaction) error {
+	if len(transactions) == 0 {
+		return errors.New("no transactions found")
+	}
+
+	first := transactions[0]
+	last := transactions[len(transactions)-1]
+
+	if last.Date.After(first.Date) {
+		return errors.New("transactions are not in chronological order")
+	}
+
+	if first.Date.Month() != last.Date.Month() {
+		return errors.New("transactions includes different months")
+	}
+
+	return nil
 }
 
 func parseDanishAmount(value string) (int64, error) {

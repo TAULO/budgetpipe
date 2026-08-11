@@ -15,6 +15,7 @@ type Mapper struct {
 
 const csvTestPath = "./data/test.csv"
 const xlsxTestPath = "./data/test.xlsx"
+const month = "Januar"
 
 func main() {
 	err := Run()
@@ -28,6 +29,7 @@ func Run() error {
 	if err != nil {
 		return fmt.Errorf("reading mapper: %w", err)
 	}
+
 	var mapper Mapper
 	err = json.Unmarshal(data, &mapper)
 	if err != nil {
@@ -45,8 +47,12 @@ func Run() error {
 		return fmt.Errorf("reading transactions: %w", err)
 	}
 
+	if err := csv.ValidateTransactions(transactions); err != nil {
+		return err
+	}
+
 	write := func(category string, amount int64) error {
-		if err := workbook.WriteCellFloat(category, "August", formatDanishAmount(amount)); err != nil {
+		if err := workbook.WriteCellFloat(category, month, formatDanishAmount(amount)); err != nil {
 			return fmt.Errorf("writing %s: %w", category, err)
 		}
 		return nil

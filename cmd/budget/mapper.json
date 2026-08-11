@@ -9,7 +9,7 @@
     "Vand (Aarhus vand)": ["Vand"],
     "Abonnementer": ["Film, musik, apps og software"],
     "Indboforsikring": ["Indboforsikring"],
-    "Daglivarer": ["Dagligvarer"],
+    "Dagligvarer": ["Dagligvarer"],
     "Byen / Cafe": ["Café, restaurant og bar"],
     "Transport": ["Taxa og offentlig transport"],
     "Andet (Overførelse)": ["Andet (Overførsel)"],
@@ -23,7 +23,7 @@
   },
   "income": {
     "Løn": ["Løn, dagpenge og pension"],
-    "Andet (Overførelse)": ["Anden indtægt"],
-    "Andet (Diverse)": ["Renter og afkast"]
+    "Overførelser": ["Anden indtægt"],
+    "Diverse": ["Renter og afkast"]
   }
 }

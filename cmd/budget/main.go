@@ -17,41 +17,62 @@ const csvTestPath = "./data/test.csv"
 const xlsxTestPath = "./data/test.xlsx"
 
 func main() {
+	err := Run()
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func Run() error {
 	data, err := os.ReadFile("cmd/budget/mapper.json")
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("reading mapper: %w", err)
 	}
 	var mapper Mapper
 	err = json.Unmarshal(data, &mapper)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("unmarshaling mapper: %w", err)
 	}
 
 	workbook, err := xlsx.NewBudget(xlsxTestPath, "Sheet1")
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("opening workbook: %w", err)
 	}
 	defer workbook.Close()
 
-	categories, err := workbook.GetCategories()
+	transactions, err := csv.Transactions(csvTestPath)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("reading transactions: %w", err)
 	}
 
-	for _, category := range categories {
-		expenses := mapper.Expenses[category]
-		incomes := mapper.Income[category]
-		allCategories := append(expenses, incomes...)
-
-		amount := csv.GetTotalAmountForCategory(csvTestPath, allCategories)
-		if amount < 0 {
-			amount *= -1
+	write := func(category string, amount int64) error {
+		if err := workbook.WriteCellFloat(category, "August", formatDanishAmount(amount)); err != nil {
+			return fmt.Errorf("writing %s: %w", category, err)
 		}
-		var _ = workbook.WriteCellFloat(category, "August", amount)
+		return nil
+	}
 
-		fmt.Println(category, incomes)
+	for category, bankCats := range mapper.Expenses {
+		expense := csv.TotalForCategories(transactions, bankCats)
+		if err := write(category, -expense); err != nil {
+			return err
+		}
+	}
+
+	for category, bankCats := range mapper.Income {
+		income := csv.TotalForCategories(transactions, bankCats)
+		fmt.Println(category, income)
+		if err := write(category, income); err != nil {
+			return err
+		}
 	}
 
 	workbook.Save()
 	workbook.Close()
+
+	return nil
+}
+
+func formatDanishAmount(danishCent int64) float64 {
+	return float64(danishCent) / 100
 }

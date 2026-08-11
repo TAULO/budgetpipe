@@ -107,7 +107,8 @@ func (b *Budget) dateCellAddressByCategory(category string, date string) (string
 }
 
 func (b *Budget) findCell(value string) (string, error) {
-	pattern := "(?i)" + regexp.QuoteMeta(value)
+	value = strings.TrimSpace(value)
+	pattern := `(?i)^\s*` + regexp.QuoteMeta(value) + `\s*$`
 	cells, err := b.workbook.SearchSheet(b.sheet, pattern, true)
 	if err != nil {
 		return "", err

@@ -16,39 +16,14 @@ import (
 
 import "budgetpipe/internal/model"
 
-func parseDanishAmount(value string) (int64, error) {
-	value = strings.TrimSpace(value)
-
-	// Remove thousands separator
-	value = strings.ReplaceAll(value, ".", "")
-
-	// Convert decimal comma to decimal point
-	value = strings.ReplaceAll(value, ",", ".")
-
-	// Parse as float temporarily, then convert to øre
-	amount, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return 0, err
+func TotalForCategories(transactions []model.Transaction, categories []string) int64 {
+	var total int64
+	for _, t := range transactions {
+		if slices.Contains(categories, strings.TrimSpace(t.Category)) {
+			total += t.Amount
+		}
 	}
-
-	return int64(math.Round(amount * 100)), nil
-}
-
-func readCSVFile(path string) (*csv.Reader, error) {
-	file, err := os.Open(path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	reader := csv.NewReader(file)
-	reader.Comma = ';'
-
-	return reader, err
-}
-
-func formatDanishAmount(danishCent int64) float64 {
-	return float64(danishCent) / 100
+	return total
 }
 
 func Transactions(path string) ([]model.Transaction, error) {
@@ -92,34 +67,33 @@ func Transactions(path string) ([]model.Transaction, error) {
 	return transactions, nil
 }
 
-func GetTotalExpenses(transactionFile string) float64 {
-	total := 0
-	transactions, err := Transactions(transactionFile)
+func parseDanishAmount(value string) (int64, error) {
+	value = strings.TrimSpace(value)
 
+	// Remove thousands separator
+	value = strings.ReplaceAll(value, ".", "")
+
+	// Convert decimal comma to decimal point
+	value = strings.ReplaceAll(value, ",", ".")
+
+	// Parse as float temporarily, then convert to øre
+	amount, err := strconv.ParseFloat(value, 64)
 	if err != nil {
-		return 0
+		return 0, err
 	}
 
-	for _, transaction := range transactions {
-		total += int(transaction.Amount)
-	}
-
-	return formatDanishAmount(int64(total))
+	return int64(math.Round(amount * 100)), nil
 }
 
-func GetTotalAmountForCategory(transactionFile string, categories []string) float64 {
-	var total int64
-	transactions, err := Transactions(transactionFile)
+func readCSVFile(path string) (*csv.Reader, error) {
+	file, err := os.Open(path)
 
 	if err != nil {
-		return 0
+		return nil, err
 	}
 
-	for _, transaction := range transactions {
-		if slices.Contains(categories, strings.TrimSpace(transaction.Category)) {
-			total += transaction.Amount
-		}
-	}
+	reader := csv.NewReader(file)
+	reader.Comma = ';'
 
-	return formatDanishAmount(total)
+	return reader, err
 }

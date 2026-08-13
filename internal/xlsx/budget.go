@@ -54,7 +54,10 @@ func (b *Budget) WriteToCell(input CellInput) error {
 
 		for _, comment := range comments {
 			if comment.Cell == address {
-				return nil // Comment already exist
+				err = b.workbook.DeleteComment(b.sheet, comment.Cell)
+				if err != nil {
+					return err
+				}
 			}
 		}
 

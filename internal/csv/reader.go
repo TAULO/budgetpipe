@@ -146,11 +146,12 @@ func (r *Reader) parse() ([]model.Transaction, error) {
 		}
 
 		transaction := model.Transaction{
-			ID:       guid.New().String(),
-			Date:     date,
-			Amount:   amount,
-			Category: record[8],
-			Comment:  record[9],
+			ID:            guid.New().String(),
+			Date:          date,
+			Amount:        amount,
+			Category:      record[8],
+			Comment:       record[9],
+			DisplayAmount: formatDanishAmount(amount),
 		}
 
 		transactions = append(transactions, transaction)

@@ -2,6 +2,7 @@ package xlsx
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
@@ -12,6 +13,13 @@ type Budget struct {
 	workbook *excelize.File
 	path     string
 	sheet    string
+}
+
+type CellInput struct {
+	Category string
+	Month    string
+	Value    int64
+	Comment  string
 }
 
 func NewBudget(path string, sheet string) (*Budget, error) {
@@ -27,42 +35,43 @@ func NewBudget(path string, sheet string) (*Budget, error) {
 	}, nil
 }
 
-func (b *Budget) WriteCellFloat(category string, date string, value int64) error {
-	address, err := b.dateCellAddressByCategory(category, date)
+func (b *Budget) WriteToCell(input CellInput) error {
+	address, err := b.dateCellAddressByCategory(input.Category, input.Month)
 	if err != nil {
 		return err
 	}
 
-	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(value), 2, 64)
+	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(input.Value), 2, 64)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
+	if input.Comment != "" {
+		comments, err := b.workbook.GetComments(b.sheet)
+		if err != nil {
+			return err
+		}
 
-func (b *Budget) WriteCellFloatWithComment(category string, date string, value int64, comment string) error {
-	address, err := b.dateCellAddressByCategory(category, date)
-	if err != nil {
-		return err
+		for _, comment := range comments {
+			if comment.Cell == address {
+				return nil // Comment already exist
+			}
+		}
+
+		err = b.workbook.AddComment(b.sheet, excelize.Comment{
+			Author: "Budget",
+			Cell:   address,
+			Text:   input.Comment,
+			Height: 100,
+			Width:  400,
+		})
+
+		if err != nil {
+			return err
+		}
 	}
 
-	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(value), 2, 64)
-	if err != nil {
-		return err
-	}
-
-	err = b.workbook.AddComment(b.sheet, excelize.Comment{
-		Author: "Budget",
-		Cell:   address,
-		Text:   comment,
-		Height: 100,
-		Width:  400,
-	})
-
-	if err != nil {
-		return err
-	}
+	slog.Info("writing transaction", "category", input.Category, "amount", input.Value, "month", input.Month, "cell", address)
 
 	return nil
 }

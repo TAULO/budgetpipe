@@ -19,18 +19,6 @@ type Mapper struct {
 
 const fallbackCategory = "Andet (Diverse)"
 
-func main() {
-	const month = "August"
-	const csvTestPath = "./data/csv/" + month + ".csv"
-	const xlsxTestPath = "./data/test.xlsx"
-	const mapperPath = "config/mapper.json"
-
-	err := Run(csvTestPath, xlsxTestPath, mapperPath, month)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-
 func Run(csvPath string, xlsxPath string, mapperPath string, month string) error {
 	data, err := os.ReadFile(mapperPath)
 	if err != nil {
@@ -47,7 +35,12 @@ func Run(csvPath string, xlsxPath string, mapperPath string, month string) error
 	if err != nil {
 		return fmt.Errorf("opening workbook: %w", err)
 	}
-	defer workbook.Close()
+	defer func(workbook *xlsx.Budget) {
+		err := workbook.Close()
+		if err != nil {
+			slog.Error("closing workbook", "error", err)
+		}
+	}(workbook)
 
 	reader, err := csv.NewReader(csvPath)
 	if err != nil {
@@ -58,15 +51,13 @@ func Run(csvPath string, xlsxPath string, mapperPath string, month string) error
 		return err
 	}
 
-	write := func(category string, amount int64) error {
-		if err := workbook.WriteCellFloat(category, month, amount); err != nil {
-			return fmt.Errorf("writing %s: %w", category, err)
-		}
-		return nil
-	}
-
-	writeWithComment := func(category string, amount int64, comment string) error {
-		if err := workbook.WriteCellFloatWithComment(category, month, amount, comment); err != nil {
+	write := func(category string, amount int64, comment string) error {
+		if err := workbook.WriteToCell(xlsx.CellInput{
+			Category: category,
+			Month:    month,
+			Value:    amount,
+			Comment:  comment,
+		}); err != nil {
 			return fmt.Errorf("writing %s: %w", category, err)
 		}
 		return nil
@@ -108,42 +99,32 @@ func Run(csvPath string, xlsxPath string, mapperPath string, month string) error
 	}
 
 	for category, total := range totals {
-		if err := write(category, total); err != nil {
+		if err := write(category, total, ""); err != nil {
 			return err
 		}
 	}
 
 	unmappedTotal := reader.Total(unmapped)
 	unmappedComments := reader.UnmappedComments(unmapped)
-	if err := writeWithComment(fallbackCategory, -unmappedTotal, unmappedComments); err != nil {
+	if err := write(fallbackCategory, -unmappedTotal, unmappedComments); err != nil {
 		return err
+	}
+
+	for category := range mapper.Income {
+		if err := write(category, totals[category], ""); err != nil {
+			return err
+		}
+	}
+
+	for category := range mapper.Expenses {
+		if err := write(category, totals[category], ""); err != nil {
+			return err
+		}
 	}
 
 	for _, transaction := range unmapped {
 		fmt.Println("UNMAPPED:", transaction)
 	}
 
-	for category := range mapper.Income {
-		if err := write(category, totals[category]); err != nil {
-			return err
-		}
-	}
-
-	for category := range mapper.Expenses {
-		if err := write(category, totals[category]); err != nil {
-			return err
-		}
-	}
-
-	for category, amount := range totals {
-		slog.Info(
-			"writing transaction to budget",
-			"category", category,
-			"amount", amount,
-		)
-	}
-
-	_ = workbook.Save()
-
-	return nil
+	return workbook.Save()
 }

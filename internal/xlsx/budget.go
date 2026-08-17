@@ -74,7 +74,7 @@ func (b *Budget) WriteToCell(input CellInput) error {
 		}
 	}
 
-	slog.Info("writing transaction", "category", input.Category, "amount", input.Value, "month", input.Month, "cell", address)
+	slog.Info("writing transaction", "category", input.Category, "amount", formatDanishAmount(input.Value), "month", input.Month, "cell", address)
 
 	return nil
 }

@@ -36,22 +36,23 @@ var initCmd = &cobra.Command{
 		}
 
 		wb := excelize.NewFile()
-		budgetFile, err := getXlSXFile()
-		if err := wb.SetSheetName("Sheet1", getSheetname()); err != nil {
+		budgetFilePath, err := getXlSXFilePath()
+		if err := wb.SetSheetName("Sheet1", getSheetName()); err != nil {
 			return fmt.Errorf("writing work sheet: %w", err)
 		}
-		if err := wb.SaveAs(budgetFile); err != nil {
+		if err := wb.SaveAs(budgetFilePath); err != nil {
 			return fmt.Errorf("creating workbook: %w", err)
 		}
 		wb.Close()
 
-		mapperFile, err := getMapperFile()
+		mapperFilePath, err := getMapperFilePath()
 		starterMapper := []byte(`{
-  "expenses": {},
-  "income": {},
-  "ignore": []
-}`)
-		if err := os.WriteFile(mapperFile, starterMapper, 0o644); err != nil {
+  	"expenses": {},
+  	"income": {},
+  	"ignore": [],
+	"fallback": ""
+	}`)
+		if err := os.WriteFile(mapperFilePath, starterMapper, 0o644); err != nil {
 			return fmt.Errorf("creating mapper: %w", err)
 		}
 

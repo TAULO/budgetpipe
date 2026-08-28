@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"budgetpipe/cmd/budget"
 	"budgetpipe/filenames"
 	"budgetpipe/flags"
 	"os"
@@ -25,7 +24,7 @@ func getWorkDir() (string, error) {
 	return filepath.Abs(dir)
 }
 
-func getCSVFile() (string, error) {
+func getCSVFilePath() (string, error) {
 	dir, err := getWorkDir()
 	if err != nil {
 		return "", err
@@ -34,7 +33,7 @@ func getCSVFile() (string, error) {
 	return filepath.Join(dir, filenames.CSV), nil
 }
 
-func getMapperFile() (string, error) {
+func getMapperFilePath() (string, error) {
 	dir, err := getWorkDir()
 	if err != nil {
 		return "", err
@@ -43,7 +42,7 @@ func getMapperFile() (string, error) {
 	return filepath.Join(dir, filenames.Mapper), nil
 }
 
-func getXlSXFile() (string, error) {
+func getXlSXFilePath() (string, error) {
 	dir, err := getWorkDir()
 	if err != nil {
 		return "", err
@@ -51,7 +50,7 @@ func getXlSXFile() (string, error) {
 	return filepath.Join(dir, filenames.XLSX), nil
 }
 
-func getSheetname() string {
+func getSheetName() string {
 	sheetName := viper.GetString(flags.Sheet)
 	currYear := strconv.Itoa(time.Now().Year())
 	if sheetName == "" {
@@ -64,15 +63,15 @@ func getSheetname() string {
 var rootCmd = &cobra.Command{
 	Use:   "budget",
 	Short: "Import transactions into your budget",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		csvPath := cmd.Flags().Lookup("csv").Value.String()
-		xlsxPath := cmd.Flags().Lookup("xlsx").Value.String()
-		month := cmd.Flags().Lookup("month").Value.String()
-
-		mapperPath := defaultMapperPath()
-
-		return budget.Run(csvPath, xlsxPath, mapperPath, month)
-	},
+	//RunE: func(cmd *cobra.Command, args []string) error {
+	//	csvPath := cmd.Flags().Lookup("csv").Value.String()
+	//	xlsxPath := cmd.Flags().Lookup("xlsx").Value.String()
+	//	month := cmd.Flags().Lookup("month").Value.String()
+	//
+	//	mapperPath := defaultMapperPath()
+	//
+	//	return budget.Run(csvPath, xlsxPath, mapperPath, month)
+	//},
 }
 
 func Execute() error {

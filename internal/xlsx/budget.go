@@ -79,6 +79,10 @@ func (b *Budget) WriteToCell(input CellInput) error {
 	return nil
 }
 
+func (b *Budget) Write(cell string, val string) error {
+	return b.workbook.SetCellValue(b.sheet, cell, val)
+}
+
 func (b *Budget) Save() error  { return b.workbook.Save() }
 func (b *Budget) Close() error { return b.workbook.Close() }
 

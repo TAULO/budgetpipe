@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"budgetpipe/internal/model"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -46,15 +48,16 @@ var initCmd = &cobra.Command{
 		wb.Close()
 
 		mapperFilePath, err := getMapperFilePath()
-		starterMapper := []byte(`{
-		"expenses": {
-			"fixed": {},
-			"variable": {}
-		},
-		"income": {},
-		"ignore": [],
-		"fallback": ""
-		}`)
+		if err != nil {
+			return fmt.Errorf("resolving mapper path: %w", err)
+		}
+
+		starter := model.NewMapper()
+		starterMapper, err := json.MarshalIndent(starter, "", "  ")
+		if err != nil {
+			return fmt.Errorf("building starter mapper: %w", err)
+		}
+
 		if err := os.WriteFile(mapperFilePath, starterMapper, 0o644); err != nil {
 			return fmt.Errorf("creating mapper: %w", err)
 		}

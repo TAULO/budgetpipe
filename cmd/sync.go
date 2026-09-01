@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"budgetpipe/internal/model"
 	"budgetpipe/internal/xlsx"
 	"encoding/json"
 	"fmt"
@@ -8,13 +9,6 @@ import (
 
 	"github.com/spf13/cobra"
 )
-
-type Mapper struct {
-	Expenses map[string][]string `json:"expenses"`
-	Income   map[string][]string `json:"income"`
-	Ignore   []string            `json:"ignore"`
-	Fallback string              `json:"fallback"`
-}
 
 var months = []string{"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"}
 
@@ -39,7 +33,7 @@ var syncCmd = &cobra.Command{
 			return fmt.Errorf("reading mapper: %w", err)
 		}
 
-		var mapper Mapper
+		var mapper model.Mapper
 		err = json.Unmarshal(data, &mapper)
 		if err != nil {
 			return fmt.Errorf("unmarshaling mapper: %w", err)
@@ -57,17 +51,26 @@ var syncCmd = &cobra.Command{
 
 		fmt.Println("expenses:")
 		addressIndex := 2
-		for category := range mapper.Expenses {
+		for category := range mapper.Expenses.Fixed {
 			cell := fmt.Sprintf("A%d", addressIndex)
 			if err := workbook.Write(cell, category); err != nil {
 				return fmt.Errorf("writing %s: %w", category, err)
 			}
 			addressIndex++
 		}
+
+		for category := range mapper.Expenses.Variable {
+			cell := fmt.Sprintf("A%d", addressIndex)
+			if err := workbook.Write(cell, category); err != nil {
+				return fmt.Errorf("writing %s: %w", category, err)
+			}
+			addressIndex++
+		}
+
 		_ = workbook.Save()
 
 		fmt.Println("income:")
-		for category, _ := range mapper.Income {
+		for category, _ := range mapper.Income.Categories {
 			fmt.Println(category)
 		}
 

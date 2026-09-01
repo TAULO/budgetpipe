@@ -47,11 +47,14 @@ var initCmd = &cobra.Command{
 
 		mapperFilePath, err := getMapperFilePath()
 		starterMapper := []byte(`{
-  	"expenses": {},
-  	"income": {},
-  	"ignore": [],
-	"fallback": ""
-	}`)
+		"expenses": {
+			"fixed": {},
+			"variable": {}
+		},
+		"income": {},
+		"ignore": [],
+		"fallback": ""
+		}`)
 		if err := os.WriteFile(mapperFilePath, starterMapper, 0o644); err != nil {
 			return fmt.Errorf("creating mapper: %w", err)
 		}

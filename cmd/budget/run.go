@@ -19,7 +19,7 @@ type Mapper struct {
 
 const fallbackCategory = "Andet (Diverse)"
 
-func Run(csvPath string, xlsxPath string, mapperPath string, month string) error {
+func Run(csvPath string, xlsxPath string, sheetName string, mapperPath string, month string) error {
 	data, err := os.ReadFile(mapperPath)
 	if err != nil {
 		return fmt.Errorf("reading mapper: %w", err)
@@ -31,7 +31,7 @@ func Run(csvPath string, xlsxPath string, mapperPath string, month string) error
 		return fmt.Errorf("unmarshaling mapper: %w", err)
 	}
 
-	workbook, err := xlsx.NewBudget(xlsxPath, "Sheet1")
+	workbook, err := xlsx.NewBudget(xlsxPath, sheetName)
 	if err != nil {
 		return fmt.Errorf("opening workbook: %w", err)
 	}

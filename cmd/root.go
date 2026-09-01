@@ -14,6 +14,8 @@ import (
 
 // for testing:
 // budget  --csv "data/csv/august.csv" --xlsx "data/test.xlsx" --month august
+// TODO:
+// budget add  --csv "data/csv/august.csv" --xlsx "data/test.xlsx" --month august
 
 func getWorkDir() (string, error) {
 	dir := viper.GetString(flags.Dir)
@@ -63,15 +65,6 @@ func getSheetName() string {
 var rootCmd = &cobra.Command{
 	Use:   "budget",
 	Short: "Import transactions into your budget",
-	//RunE: func(cmd *cobra.Command, args []string) error {
-	//	csvPath := cmd.Flags().Lookup("csv").Value.String()
-	//	xlsxPath := cmd.Flags().Lookup("xlsx").Value.String()
-	//	month := cmd.Flags().Lookup("month").Value.String()
-	//
-	//	mapperPath := defaultMapperPath()
-	//
-	//	return budget.Run(csvPath, xlsxPath, mapperPath, month)
-	//},
 }
 
 func Execute() error {
@@ -92,14 +85,4 @@ func init() {
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
 		panic(err)
 	}
-}
-
-func defaultMapperPath() string {
-	path, _ := os.Getwd()
-
-	return filepath.Join(
-		path,
-		"config",
-		"mapper.json",
-	)
 }

@@ -52,7 +52,7 @@ var syncCmd = &cobra.Command{
 
 		for i, month := range months {
 			cell := fmt.Sprintf("%c1", 'A'+i+1)
-			workbook.Write(cell, month)
+			_ = workbook.Write(cell, month)
 		}
 
 		fmt.Println("expenses:")
@@ -64,7 +64,7 @@ var syncCmd = &cobra.Command{
 			}
 			addressIndex++
 		}
-		workbook.Save()
+		_ = workbook.Save()
 
 		fmt.Println("income:")
 		for category, _ := range mapper.Income {

@@ -28,6 +28,19 @@ func NewBudget(template []byte, sheet string) (*Budget, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := wb.Close(); err != nil {
+		return nil, err
+	}
+
+	current := wb.GetSheetName(0)
+	if current == "" {
+		return nil, fmt.Errorf("template has no sheets")
+	}
+	if current != sheet {
+		if err := wb.SetSheetName(current, sheet); err != nil {
+			return nil, err
+		}
+	}
 
 	return &Budget{
 		workbook: wb,

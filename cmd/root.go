@@ -28,15 +28,6 @@ func getWorkDir() (string, error) {
 	return filepath.Abs(dir)
 }
 
-func getCSVFilePath() (string, error) {
-	dir, err := getWorkDir()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(dir, filenames.CSV), nil
-}
-
 func getDataDir() (string, error) {
 	dir, err := getWorkDir()
 

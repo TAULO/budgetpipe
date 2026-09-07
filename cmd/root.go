@@ -17,6 +17,8 @@ import (
 // TODO:
 // budget add  --csv "data/csv/august.csv" --xlsx "data/test.xlsx" --month august
 
+var template []byte
+
 func getWorkDir() (string, error) {
 	dir := viper.GetString(flags.Dir)
 	if dir == "" {
@@ -33,6 +35,16 @@ func getCSVFilePath() (string, error) {
 	}
 
 	return filepath.Join(dir, filenames.CSV), nil
+}
+
+func getDataDir() (string, error) {
+	dir, err := getWorkDir()
+
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, "data"), nil
 }
 
 func getMapperFilePath() (string, error) {
@@ -67,18 +79,12 @@ var rootCmd = &cobra.Command{
 	Short: "Import transactions into your budget",
 }
 
-func Execute() error {
+func Execute(templateBytes []byte) error {
+	template = templateBytes
 	return rootCmd.Execute()
 }
 
 func init() {
-	//rootCmd.Flags().String("csv", "", "path to the bank data CSV file")
-	//rootCmd.Flags().String("xlsx", "", "path to the budget Excel file")
-	//rootCmd.Flags().String("month", "", "month to import")
-	//_ = rootCmd.MarkFlagRequired("csv")
-	//_ = rootCmd.MarkFlagRequired("xlsx")
-	//_ = rootCmd.MarkFlagRequired("month")
-
 	rootCmd.PersistentFlags().StringP(flags.Dir, "C", "", "Working directory (default: current directory)")
 	rootCmd.PersistentFlags().StringP(flags.Sheet, "S", "", "The name of the sheet (default: current year)")
 

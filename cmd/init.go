@@ -2,50 +2,60 @@ package cmd
 
 import (
 	"budgetpipe/internal/model"
+	"budgetpipe/internal/xlsx"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/xuri/excelize/v2"
 )
 
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a new budget",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := getWorkDir()
+		workDir, err := getWorkDir()
 		if err != nil {
 			return err
 		}
 
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("creating work dir %s: %w", dir, err)
+		if err := os.MkdirAll(workDir, 0o755); err != nil {
+			return fmt.Errorf("creating work dir %s: %w", workDir, err)
 		}
 
-		d, err := os.Open(dir)
+		dir, err := os.Open(workDir)
 		if err != nil {
 			return fmt.Errorf("opening work dir: %w", err)
 		}
-		entries, err := d.Readdirnames(1)
-		d.Close()
+		entries, err := dir.Readdirnames(1)
+		if err := dir.Close(); err != nil {
+			return fmt.Errorf("closing work dir: %w", err)
+		}
 		if err != nil && err != io.EOF {
 			return fmt.Errorf("reading work dir: %w", err)
 		}
 		if len(entries) > 0 {
-			return fmt.Errorf("budget already initialized in %s", dir)
+			return fmt.Errorf("budget already initialized in %s", workDir)
 		}
 
-		wb := excelize.NewFile()
-		budgetFilePath, err := getXlSXFilePath()
-		if err := wb.SetSheetName("Sheet1", getSheetName()); err != nil {
-			return fmt.Errorf("writing work sheet: %w", err)
+		if err := createDataCSVFile(); err != nil {
+			return fmt.Errorf("creating data csv file: %w", err)
 		}
-		if err := wb.SaveAs(budgetFilePath); err != nil {
-			return fmt.Errorf("creating workbook: %w", err)
+
+		wb, err := xlsx.NewBudget(template, getSheetName())
+		if err != nil {
+			return fmt.Errorf("creating budget file: %w", err)
 		}
-		wb.Close()
+
+		xlsxPath, err := getXlSXFilePath()
+		if err != nil {
+			return fmt.Errorf("resolving xlsx path: %w", err)
+		}
+		if err := wb.SaveAs(xlsxPath); err != nil {
+			return fmt.Errorf("saving budget file: %w", err)
+		}
 
 		mapperFilePath, err := getMapperFilePath()
 		if err != nil {
@@ -62,9 +72,35 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("creating mapper: %w", err)
 		}
 
-		fmt.Printf("initialized budget in %s\n", dir)
+		fmt.Printf("initialized budget in %s\n", workDir)
 		return nil
 	},
+}
+
+func createDataCSVFile() error {
+	months := []string{
+		"jan", "feb", "mar", "apr", "may", "jun",
+		"jul", "aug", "sep", "okt", "nov", "dec",
+	}
+
+	dataDir, err := getDataDir()
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+		return err
+	}
+
+	for _, month := range months {
+		path := filepath.Join(dataDir, month+".csv")
+
+		if err := os.WriteFile(path, []byte{}, 0o644); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func init() {

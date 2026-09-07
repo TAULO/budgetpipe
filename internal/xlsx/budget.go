@@ -1,6 +1,7 @@
 package xlsx
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -22,15 +23,14 @@ type CellInput struct {
 	Comment  string
 }
 
-func NewBudget(path string, sheet string) (*Budget, error) {
-	workbook, err := excelize.OpenFile(path)
+func NewBudget(template []byte, sheet string) (*Budget, error) {
+	wb, err := excelize.OpenReader(bytes.NewReader(template))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Budget{
-		workbook: workbook,
-		path:     path,
+		workbook: wb,
 		sheet:    sheet,
 	}, nil
 }
@@ -83,8 +83,9 @@ func (b *Budget) Write(cell string, val string) error {
 	return b.workbook.SetCellValue(b.sheet, cell, val)
 }
 
-func (b *Budget) Save() error  { return b.workbook.Save() }
-func (b *Budget) Close() error { return b.workbook.Close() }
+func (b *Budget) Save() error                     { return b.workbook.Save() }
+func (b *Budget) SaveAs(destination string) error { return b.workbook.SaveAs(destination) }
+func (b *Budget) Close() error                    { return b.workbook.Close() }
 
 func (b *Budget) GetCategories() ([]string, error) {
 	rows, err := b.workbook.GetRows(b.sheet)

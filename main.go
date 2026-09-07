@@ -1,11 +1,15 @@
 package main
 
-import "budgetpipe/cmd"
+import (
+	"budgetpipe/cmd"
+	_ "embed"
+)
+
+//go:embed assets/budget-template.xlsx
+var templateBytes []byte
 
 func main() {
-	err := cmd.Execute()
-
-	if err != nil {
+	if err := cmd.Execute(templateBytes); err != nil {
 		panic(err)
 	}
 }

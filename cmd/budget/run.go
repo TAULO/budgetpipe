@@ -19,7 +19,7 @@ type Mapper struct {
 
 const fallbackCategory = "Andet (Diverse)"
 
-func Run(csvPath string, xlsxPath string, sheetName string, mapperPath string, month string) error {
+func Run(csvPath string, xlsxPath []byte, sheetName string, mapperPath string, month string) error {
 	data, err := os.ReadFile(mapperPath)
 	if err != nil {
 		return fmt.Errorf("reading mapper: %w", err)

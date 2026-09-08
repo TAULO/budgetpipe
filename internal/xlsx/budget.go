@@ -100,41 +100,61 @@ func (b *Budget) Save() error                     { return b.workbook.Save() }
 func (b *Budget) SaveAs(destination string) error { return b.workbook.SaveAs(destination) }
 func (b *Budget) Close() error                    { return b.workbook.Close() }
 
-func (b *Budget) GetCategories() ([]string, error) {
-	rows, err := b.workbook.GetRows(b.sheet)
+// TableCategories returns the category labels in a named Excel table,
+// in sheet order. Header row and the trailing Total row are skipped.
+func (b *Budget) TableCategories(tableName string) ([]string, error) {
+	tables, err := b.workbook.GetTables(b.sheet)
+	if err != nil {
+		return nil, err
+	}
+
+	var target *excelize.Table
+	for i := range tables {
+		if strings.EqualFold(tables[i].Name, tableName) {
+			target = &tables[i]
+			break
+		}
+	}
+	if target == nil {
+		allTables, _ := b.workbook.GetTables(b.sheet)
+		for _, table := range allTables {
+			fmt.Printf("Found table: %s (%s)\n", table.Name, table.Range)
+		}
+		return nil, fmt.Errorf(
+			"table %q not found on sheet %q",
+			tableName,
+			b.sheet,
+		)
+	}
+
+	parts := strings.Split(target.Range, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("unexpected table range %q", target.Range)
+	}
+	startCol, startRow, err := excelize.CellNameToCoordinates(parts[0])
+	if err != nil {
+		return nil, err
+	}
+	_, endRow, err := excelize.CellNameToCoordinates(parts[1])
 	if err != nil {
 		return nil, err
 	}
 
 	var categories []string
-	for i := 1; i < len(rows); i++ {
-		if len(rows[i]) == 0 {
-			continue
-		}
-		category := strings.TrimSpace(rows[i][0])
-		if category == "" {
-			continue
-		}
-
-		cell := fmt.Sprintf("A%d", i+1)
-		styleID, err := b.workbook.GetCellStyle(b.sheet, cell)
+	for row := startRow + 1; row <= endRow; row++ { // +1 skips the header row
+		cell, err := excelize.CoordinatesToCellName(startCol, row)
 		if err != nil {
 			return nil, err
 		}
-
-		style, err := b.workbook.GetStyle(styleID)
+		val, err := b.workbook.GetCellValue(b.sheet, cell)
 		if err != nil {
 			return nil, err
 		}
-
-		// RULES:
-		// Skip section headers and totals — they're bold or italic.
-		// Real categories are plain text (no bold, no italic).
-		if style.Font != nil && (style.Font.Bold || style.Font.Italic) {
+		val = strings.TrimSpace(val)
+		if val == "" || strings.EqualFold(val, "Total") {
 			continue
 		}
-
-		categories = append(categories, category)
+		categories = append(categories, val)
 	}
 	return categories, nil
 }

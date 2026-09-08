@@ -23,6 +23,11 @@ type CellInput struct {
 	Comment  string
 }
 
+type TableBounds struct {
+	startCol, startRow int
+	endCol, endRow     int
+}
+
 func NewBudget(template []byte, sheet string) (*Budget, error) {
 	wb, err := excelize.OpenReader(bytes.NewReader(template))
 	if err != nil {
@@ -103,46 +108,19 @@ func (b *Budget) Close() error                    { return b.workbook.Close() }
 // TableCategories returns the category labels in a named Excel table,
 // in sheet order. Header row and the trailing Total row are skipped.
 func (b *Budget) TableCategories(tableName string) ([]string, error) {
-	tables, err := b.workbook.GetTables(b.sheet)
+	table, err := b.getTableByName(tableName)
 	if err != nil {
 		return nil, err
 	}
 
-	var target *excelize.Table
-	for i := range tables {
-		if strings.EqualFold(tables[i].Name, tableName) {
-			target = &tables[i]
-			break
-		}
-	}
-	if target == nil {
-		allTables, _ := b.workbook.GetTables(b.sheet)
-		for _, table := range allTables {
-			fmt.Printf("Found table: %s (%s)\n", table.Name, table.Range)
-		}
-		return nil, fmt.Errorf(
-			"table %q not found on sheet %q",
-			tableName,
-			b.sheet,
-		)
-	}
-
-	parts := strings.Split(target.Range, ":")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("unexpected table range %q", target.Range)
-	}
-	startCol, startRow, err := excelize.CellNameToCoordinates(parts[0])
-	if err != nil {
-		return nil, err
-	}
-	_, endRow, err := excelize.CellNameToCoordinates(parts[1])
+	bounds, err := b.getTableBounds(table)
 	if err != nil {
 		return nil, err
 	}
 
 	var categories []string
-	for row := startRow + 1; row <= endRow; row++ { // +1 skips the header row
-		cell, err := excelize.CoordinatesToCellName(startCol, row)
+	for row := bounds.startRow + 1; row <= bounds.endRow; row++ { // +1 skips the header row
+		cell, err := excelize.CoordinatesToCellName(bounds.startCol, row)
 		if err != nil {
 			return nil, err
 		}
@@ -157,6 +135,132 @@ func (b *Budget) TableCategories(tableName string) ([]string, error) {
 		categories = append(categories, val)
 	}
 	return categories, nil
+}
+
+func (b *Budget) WriteCellByCategoryAndMonth(tableName string, category string, month string, value string) error {
+	monthCol, err := b.getMonthCol(tableName, month)
+	if err != nil {
+		return err
+	}
+
+	categoryRow, err := b.getCategoryRow(tableName, category)
+	if err != nil {
+		return err
+	}
+
+	cell, err := excelize.JoinCellName(monthCol, categoryRow)
+	if err != nil {
+		return err
+	}
+
+	if err := b.workbook.SetCellValue(b.sheet, cell, value); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *Budget) getTableByName(tableName string) (*excelize.Table, error) {
+	tables, err := b.workbook.GetTables(b.sheet)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range tables {
+		if strings.EqualFold(tables[i].Name, tableName) {
+			return &tables[i], nil
+		}
+	}
+
+	fmt.Println("Found tables:")
+	for _, table := range tables {
+		fmt.Printf("  %s (%s)\n", table.Name, table.Range)
+	}
+
+	return nil, fmt.Errorf(
+		"table %q not found on sheet %q",
+		tableName,
+		b.sheet,
+	)
+}
+
+func (b *Budget) getTableBounds(table *excelize.Table) (*TableBounds, error) {
+	parts := strings.Split(table.Range, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("unexpected table range %q", table.Range)
+	}
+	startCol, startRow, err := excelize.CellNameToCoordinates(parts[0])
+	if err != nil {
+		return nil, err
+	}
+	endCol, endRow, err := excelize.CellNameToCoordinates(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	return &TableBounds{startCol, startRow, endCol, endRow}, nil
+}
+
+func (b *Budget) getMonthCol(tableName string, month string) (col string, err error) {
+	month = strings.TrimSpace(strings.ToUpper(month))
+
+	table, err := b.getTableByName(tableName)
+	if err != nil {
+		return "", err
+	}
+
+	bounds, err := b.getTableBounds(table)
+	if err != nil {
+		return "", err
+	}
+
+	for col := bounds.startCol; col <= bounds.endCol; col++ {
+		cell, err := excelize.CoordinatesToCellName(col, bounds.startRow)
+		if err != nil {
+			return "", err
+		}
+
+		val, err := b.workbook.GetCellValue(b.sheet, cell)
+		if err != nil {
+			return "", err
+		}
+
+		val = strings.TrimSpace(strings.ToUpper(val))
+		if strings.EqualFold(val, month) {
+			return excelize.ColumnNumberToName(col)
+		}
+	}
+
+	return "", fmt.Errorf("no cell found on sheet %q for %q", b.sheet, month)
+}
+
+func (b *Budget) getCategoryRow(tableName, category string) (int, error) {
+	category = strings.TrimSpace(strings.ToLower(category))
+
+	table, err := b.getTableByName(tableName)
+	if err != nil {
+		return -1, err
+	}
+	bounds, err := b.getTableBounds(table)
+	if err != nil {
+		return -1, err
+	}
+
+	for row := bounds.startRow + 1; row <= bounds.endRow; row++ {
+		cell, err := excelize.CoordinatesToCellName(bounds.startCol, row)
+		if err != nil {
+			return -1, err
+		}
+		val, err := b.workbook.GetCellValue(b.sheet, cell)
+		if err != nil {
+			return -1, err
+		}
+		if strings.TrimSpace(strings.ToLower(val)) == category {
+			return row, nil
+		}
+	}
+
+	return -1, fmt.Errorf("category %q not found in table %q", category, tableName)
 }
 
 func (b *Budget) dateCellAddressByCategory(category string, date string) (string, error) {

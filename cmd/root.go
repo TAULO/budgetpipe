@@ -65,6 +65,15 @@ func getSheetName() string {
 	return sheetName
 }
 
+func getDataCSVFilePath(month string) (string, error) {
+	dataDir, err := getDataDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dataDir, month+".csv"), nil
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "budget",
 	Short: "Import transactions into your budget",

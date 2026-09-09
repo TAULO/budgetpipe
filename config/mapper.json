@@ -1,28 +1,40 @@
 {
   "expenses": {
-    "Husleje": ["Husleje"],
-    "A-kasse": ["Fagforening, A-kasse og lønsikring"],
-    "Internet og Telefon": ["Telefon, internet, streaming og TV"],
-    "Varme (kredsløb)": ["Varme"],
-    "Fitness": ["Sport og fritidsaktiviteter"],
-    "El (NRGI)": ["El"],
-    "Vand (Aarhus vand)": ["Vand"],
-    "Abonnementer": ["Film, musik, apps og software"],
-    "Indboforsikring": ["Indboforsikring"],
-    "Dagligvarer": ["Dagligvarer"],
-    "Byen / Cafe": ["Café, restaurant og bar"],
-    "Transport": ["Taxa og offentlig transport"],
-    "Andet (Overførelse)": ["Andet (Overførsel)"],
-    "Takeaway / fast food": ["Take away og fast food"],
-    "Cykel (reparationer, udstyr mv.)": ["Cykler og andet udstyr"],
-    "Bøger": ["Aviser, blade og bøger"],
-    "Tøj, sko og accessories": ["Tøj, sko og accessories"],
-    "Ferie": ["Ferie og rejser"],
-    "Indskud til Nordnet": ["Opsparing og investering (Andet)"]
+    "fixed": {
+      "A-kasse": ["Fagforening, A-kasse og lønsikring"],
+      "Abonnementer": ["Film, musik, apps og software"],
+      "El (NRGI)": ["El"],
+      "Fitness": ["Sport og fritidsaktiviteter"],
+      "Husleje": ["Husleje"],
+      "Indboforsikring": ["Indboforsikring"],
+      "Internet og Telefon": ["Telefon, internet, streaming og TV"],
+      "Vand (Aarhus vand)": ["Vand"],
+      "Varme (kredsløb)": ["Varme"]
+    },
+    "variable": {
+      "Andet (Diverse)": [],
+      "Andet (Overførelse)": ["Andet (Overførsel)"],
+      "Byen / Cafe": ["Café, restaurant og bar"],
+      "Bøger": ["Aviser, blade og bøger"],
+      "Cykel (reparationer, udstyr mv.)": ["Cykler og andet udstyr"],
+      "Dagligvarer": ["Dagligvarer"],
+      "Ferie": ["Ferie og rejser"],
+      "Takeaway / fast food": ["Take away og fast food"],
+      "Transport": ["Taxa og offentlig transport"],
+      "Tøj, sko og accessories": ["Tøj, sko og accessories"]
+    },
+    "investment": {
+      "Indskud til Nordnet": ["Opsparing og investering (Andet)"]
+    },
+    "fallback": ""
   },
   "income": {
-    "Løn": ["Løn, dagpenge og pension"],
-    "Overførelser": ["Anden indtægt", "Anden udgift"],
-    "Diverse": ["Renter og afkast"]
-  }
+    "categories": {
+      "Løn": ["Løn, dagpenge og pension"],
+      "Overførelser": ["Anden indtægt", "Anden udgift"],
+      "Diverse": ["Renter og afkast"]
+    },
+    "fallback": ""
+  },
+  "ignore": []
 }

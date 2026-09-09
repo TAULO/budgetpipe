@@ -1,5 +1,7 @@
 # budgetpipe
 
+<img width="2182" height="1179" alt="Screenshot 2026-09-09 at 15 28 21" src="https://github.com/user-attachments/assets/f7dcc68f-0436-4214-97ff-54cebd35eebd" />
+
 A small CLI that pours your bank's monthly CSV export into an Excel budget.
 
 Everything lives in one working directory: the bank exports under `data/`, a

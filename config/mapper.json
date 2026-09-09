@@ -26,7 +26,7 @@
     "investment": {
       "Indskud til Nordnet": ["Opsparing og investering (Andet)"]
     },
-    "fallback": ""
+    "fallback": "Andet (Diverse)"
   },
   "income": {
     "categories": {
@@ -34,7 +34,7 @@
       "Overførelser": ["Anden indtægt", "Anden udgift"],
       "Diverse": ["Renter og afkast"]
     },
-    "fallback": "Andet (Diverse)"
+    "fallback": ""
   },
   "ignore": []
 }

@@ -101,7 +101,12 @@ func (b *Budget) WriteToCellInTable(input CellInput) error {
 	return nil
 }
 
-func (b *Budget) Save() error  { return b.workbook.Save() }
+func (b *Budget) Save() error {
+	if err := b.workbook.UpdateLinkedValue(); err != nil {
+		return err
+	}
+	return b.workbook.Save()
+}
 func (b *Budget) Close() error { return b.workbook.Close() }
 
 // TableCategories returns the category labels of every budget table, keyed by

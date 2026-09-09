@@ -47,7 +47,7 @@ func getMapperFilePath() (string, error) {
 	return filepath.Join(dir, filenames.Mapper), nil
 }
 
-func getXlSXFilePath() (string, error) {
+func getBudgetFilePath() (string, error) {
 	dir, err := getWorkDir()
 	if err != nil {
 		return "", err

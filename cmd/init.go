@@ -3,7 +3,6 @@ package cmd
 import (
 	"budgetpipe/internal/model"
 	"budgetpipe/internal/xlsx"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -49,7 +48,7 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("resolving xlsx path: %w", err)
 		}
 
-		err = xlsx.NewBudgetTemplate(template, budgetPath)
+		err = xlsx.WriteTemplate(template, getSheetName(), budgetPath)
 		if err != nil {
 			return fmt.Errorf("creating budget template file: %w", err)
 		}
@@ -59,18 +58,18 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("resolving mapper path: %w", err)
 		}
 
-		starter := model.NewMapper()
-		starterMapper, err := json.MarshalIndent(starter, "", "  ")
+		budget, err := xlsx.NewBudget(budgetPath, getSheetName())
 		if err != nil {
-			return fmt.Errorf("building starter mapper: %w", err)
+			return fmt.Errorf("creating budget file: %w", err)
 		}
+		cats, err := budget.TableCategories()
 
-		if err := os.WriteFile(mapperFilePath, starterMapper, 0o644); err != nil {
-			return fmt.Errorf("creating mapper: %w", err)
-		}
+		store := model.NewMapperStore(mapperFilePath)
+		starter := model.NewMapper()
 
+		starter.SyncCategories(cats.Income, cats.Fixed, cats.Variable)
 		fmt.Printf("initialized budget in %s\n", workDir)
-		return nil
+		return store.Save(starter)
 	},
 }
 

@@ -17,10 +17,11 @@ type Budget struct {
 }
 
 type CellInput struct {
-	Category string
-	Month    string
-	Value    int64
-	Comment  string
+	TableName string
+	Category  string
+	Month     string
+	Value     int64
+	Comment   string
 }
 
 type TableBounds struct {
@@ -59,13 +60,13 @@ func NewBudget(path string, sheet string) (*Budget, error) {
 	}, nil
 }
 
-func (b *Budget) WriteToCell(input CellInput) error {
-	address, err := b.dateCellAddressByCategory(input.Category, input.Month)
+func (b *Budget) WriteToCellInTable(input CellInput) error {
+	cell, err := b.getCellName(input.TableName, input.Month, input.Category)
 	if err != nil {
 		return err
 	}
 
-	err = b.workbook.SetCellFloat(b.sheet, address, formatDanishAmount(input.Value), 2, 64)
+	err = b.workbook.SetCellFloat(b.sheet, cell, formatDanishAmount(input.Value), 2, 64)
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func (b *Budget) WriteToCell(input CellInput) error {
 		}
 
 		for _, comment := range comments {
-			if comment.Cell == address {
+			if comment.Cell == cell {
 				err = b.workbook.DeleteComment(b.sheet, comment.Cell)
 				if err != nil {
 					return err
@@ -87,7 +88,7 @@ func (b *Budget) WriteToCell(input CellInput) error {
 
 		err = b.workbook.AddComment(b.sheet, excelize.Comment{
 			Author: "Budget",
-			Cell:   address,
+			Cell:   cell,
 			Text:   input.Comment,
 			Height: 100,
 			Width:  400,
@@ -98,7 +99,7 @@ func (b *Budget) WriteToCell(input CellInput) error {
 		}
 	}
 
-	slog.Info("writing transaction", "category", input.Category, "amount", formatDanishAmount(input.Value), "month", input.Month, "cell", address)
+	slog.Info("writing transaction", "category", input.Category, "amount", formatDanishAmount(input.Value), "month", input.Month, "cell", cell)
 
 	return nil
 }
@@ -129,27 +130,23 @@ func (b *Budget) TableCategories() (TableCategories, error) {
 	}, nil
 }
 
-func (b *Budget) WriteCellByCategoryAndMonth(tableName string, category string, month string, value int32) error {
+func (b *Budget) getCellName(tableName, month, category string) (string, error) {
 	monthCol, err := b.getMonthCol(tableName, month)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	categoryRow, err := b.getCategoryRow(tableName, category)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	cell, err := excelize.JoinCellName(monthCol, categoryRow)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	if err := b.workbook.SetCellValue(b.sheet, cell, value); err != nil {
-		return err
-	}
-
-	return nil
+	return cell, nil
 }
 
 // TableCategories returns the category labels in a named Excel table,

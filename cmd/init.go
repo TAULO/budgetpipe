@@ -44,17 +44,14 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("creating data csv file: %w", err)
 		}
 
-		wb, err := xlsx.NewBudget(template, getSheetName())
-		if err != nil {
-			return fmt.Errorf("creating budget file: %w", err)
-		}
-
-		xlsxPath, err := getXlSXFilePath()
+		budgetPath, err := getBudgetFilePath()
 		if err != nil {
 			return fmt.Errorf("resolving xlsx path: %w", err)
 		}
-		if err := wb.SaveAs(xlsxPath); err != nil {
-			return fmt.Errorf("saving budget file: %w", err)
+
+		err = xlsx.NewBudgetTemplate(template, budgetPath)
+		if err != nil {
+			return fmt.Errorf("creating budget template file: %w", err)
 		}
 
 		mapperFilePath, err := getMapperFilePath()

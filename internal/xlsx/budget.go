@@ -1,7 +1,7 @@
 package xlsx
 
 import (
-	"bytes"
+	"budgetpipe/tables"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -28,8 +28,14 @@ type TableBounds struct {
 	endCol, endRow     int
 }
 
-func NewBudget(template []byte, sheet string) (*Budget, error) {
-	wb, err := excelize.OpenReader(bytes.NewReader(template))
+type TableCategories struct {
+	Income   []string
+	Fixed    []string
+	Variable []string
+}
+
+func NewBudget(path string, sheet string) (*Budget, error) {
+	wb, err := excelize.OpenFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -97,17 +103,58 @@ func (b *Budget) WriteToCell(input CellInput) error {
 	return nil
 }
 
-func (b *Budget) Write(cell string, val string) error {
-	return b.workbook.SetCellValue(b.sheet, cell, val)
+func (b *Budget) Save() error  { return b.workbook.Save() }
+func (b *Budget) Close() error { return b.workbook.Close() }
+
+func (b *Budget) TableCategories() (TableCategories, error) {
+	incomeCategories, err := b.getTableCategories(tables.Income)
+	if err != nil {
+		return TableCategories{}, fmt.Errorf("getting table categories: %w", err)
+	}
+
+	variableCategories, err := b.getTableCategories(tables.Variable)
+	if err != nil {
+		return TableCategories{}, fmt.Errorf("getting table categories: %w", err)
+	}
+
+	fixedCategories, err := b.getTableCategories(tables.Fixed)
+	if err != nil {
+		return TableCategories{}, fmt.Errorf("getting table categories: %w", err)
+	}
+
+	return TableCategories{
+		Income:   incomeCategories,
+		Variable: variableCategories,
+		Fixed:    fixedCategories,
+	}, nil
 }
 
-func (b *Budget) Save() error                     { return b.workbook.Save() }
-func (b *Budget) SaveAs(destination string) error { return b.workbook.SaveAs(destination) }
-func (b *Budget) Close() error                    { return b.workbook.Close() }
+func (b *Budget) WriteCellByCategoryAndMonth(tableName string, category string, month string, value int32) error {
+	monthCol, err := b.getMonthCol(tableName, month)
+	if err != nil {
+		return err
+	}
+
+	categoryRow, err := b.getCategoryRow(tableName, category)
+	if err != nil {
+		return err
+	}
+
+	cell, err := excelize.JoinCellName(monthCol, categoryRow)
+	if err != nil {
+		return err
+	}
+
+	if err := b.workbook.SetCellValue(b.sheet, cell, value); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // TableCategories returns the category labels in a named Excel table,
 // in sheet order. Header row and the trailing Total row are skipped.
-func (b *Budget) TableCategories(tableName string) ([]string, error) {
+func (b *Budget) getTableCategories(tableName string) ([]string, error) {
 	table, err := b.getTableByName(tableName)
 	if err != nil {
 		return nil, err
@@ -137,43 +184,20 @@ func (b *Budget) TableCategories(tableName string) ([]string, error) {
 	return categories, nil
 }
 
-func (b *Budget) WriteCellByCategoryAndMonth(tableName string, category string, month string, value string) error {
-	monthCol, err := b.getMonthCol(tableName, month)
-	if err != nil {
-		return err
-	}
-
-	categoryRow, err := b.getCategoryRow(tableName, category)
-	if err != nil {
-		return err
-	}
-
-	cell, err := excelize.JoinCellName(monthCol, categoryRow)
-	if err != nil {
-		return err
-	}
-
-	if err := b.workbook.SetCellValue(b.sheet, cell, value); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (b *Budget) getTableByName(tableName string) (*excelize.Table, error) {
-	tables, err := b.workbook.GetTables(b.sheet)
+	excelTables, err := b.workbook.GetTables(b.sheet)
 	if err != nil {
 		return nil, err
 	}
 
-	for i := range tables {
-		if strings.EqualFold(tables[i].Name, tableName) {
-			return &tables[i], nil
+	for i := range excelTables {
+		if strings.EqualFold(excelTables[i].Name, tableName) {
+			return &excelTables[i], nil
 		}
 	}
 
 	fmt.Println("Found tables:")
-	for _, table := range tables {
+	for _, table := range excelTables {
 		fmt.Printf("  %s (%s)\n", table.Name, table.Range)
 	}
 

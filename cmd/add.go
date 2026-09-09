@@ -20,7 +20,7 @@ var addCmd = &cobra.Command{
 			return fmt.Errorf("resolving csv data path: %w", err)
 		}
 
-		xlsxFilePath, err := getXlSXFilePath()
+		budgetPath, err := getBudgetFilePath()
 		if err != nil {
 			return fmt.Errorf("resolving xlsx data path: %w", err)
 		}
@@ -30,21 +30,20 @@ var addCmd = &cobra.Command{
 			return fmt.Errorf("creating csv reader: %w", err)
 		}
 
-		budget, err := xlsx.NewBudget(template, getSheetName())
+		budget, err := xlsx.NewBudget(budgetPath, getSheetName())
 		if err != nil {
 			return fmt.Errorf("creating budget: %w", err)
 		}
 
-		tableCategories, err := budget.TableCategories(tables.Income)
-		if err != nil {
-			return fmt.Errorf("getting table categories: %w", err)
-		}
+		budgetCategories, err := budget.TableCategories()
 
-		fmt.Println(tableCategories)
-		fmt.Println(budget.WriteCellByCategoryAndMonth(tables.Fixed, tableCategories[0], month, "foo"))
 		fmt.Println(reader.Transactions())
 
-		return budget.SaveAs(xlsxFilePath)
+		fmt.Println(budget.WriteCellByCategoryAndMonth(tables.Income, budgetCategories.Income[0], month, 2800))
+		fmt.Println(budget.WriteCellByCategoryAndMonth(tables.Variable, budgetCategories.Variable[0], month, -2000))
+		fmt.Println(budget.WriteCellByCategoryAndMonth(tables.Fixed, budgetCategories.Fixed[0], month, -3000))
+
+		return budget.Save()
 	},
 }
 

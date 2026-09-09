@@ -3,6 +3,7 @@ package cmd
 import (
 	"budgetpipe/internal/model"
 	"budgetpipe/internal/xlsx"
+	"budgetpipe/months"
 	"fmt"
 	"io"
 	"os"
@@ -63,22 +64,20 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("creating budget file: %w", err)
 		}
 		cats, err := budget.TableCategories()
+		if err != nil {
+			return fmt.Errorf("reading budget categories: %w", err)
+		}
 
 		store := model.NewMapperStore(mapperFilePath)
 		starter := model.NewMapper()
 
-		starter.SyncCategories(cats.Income, cats.Fixed, cats.Variable)
+		starter.SyncCategories(cats)
 		fmt.Printf("initialized budget in %s\n", workDir)
 		return store.Save(starter)
 	},
 }
 
 func createDataCSVFile() error {
-	months := []string{
-		"jan", "feb", "mar", "apr", "may", "jun",
-		"jul", "aug", "sep", "okt", "nov", "dec",
-	}
-
 	dataDir, err := getDataDir()
 	if err != nil {
 		return err
@@ -88,8 +87,8 @@ func createDataCSVFile() error {
 		return err
 	}
 
-	for _, month := range months {
-		path := filepath.Join(dataDir, month+".csv")
+	for _, month := range months.All() {
+		path := filepath.Join(dataDir, month.Key()+".csv")
 
 		if err := os.WriteFile(path, []byte{}, 0o644); err != nil {
 			return err

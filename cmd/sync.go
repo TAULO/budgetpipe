@@ -50,7 +50,7 @@ var syncCmd = &cobra.Command{
 			}
 		}
 
-		mapper.SyncCategories(cats.Income, cats.Fixed, cats.Variable)
+		mapper.SyncCategories(cats)
 
 		if err := store.Save(mapper); err != nil {
 			return fmt.Errorf("saving mapper: %w", err)

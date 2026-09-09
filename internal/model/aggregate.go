@@ -32,13 +32,8 @@ type target struct {
 	category string
 }
 
-// rule is where one bank category lands in the budget.
-type rule struct {
-	target target
-	negate bool
-}
-
-// Aggregate maps transactions onto budget cells.
+// Aggregate maps transactions onto budget cells. Amounts are summed exactly as
+// the bank exported them, so expenses stay negative.
 //
 // The mapper is inverted into a bank category -> budget cell lookup once, so
 // each transaction is placed with a single map hit instead of a scan over every
@@ -80,7 +75,7 @@ func (m *Mapper) Aggregate(transactions []Transaction) (Result, error) {
 		}
 
 		if matched, ok := rules[bankCategory]; ok {
-			totals[matched.target] += matched.sign(transaction.Amount)
+			totals[matched] += transaction.Amount
 			continue
 		}
 
@@ -93,8 +88,8 @@ func (m *Mapper) Aggregate(transactions []Transaction) (Result, error) {
 			continue
 		}
 
-		totals[catchAll.target] += catchAll.sign(transaction.Amount)
-		absorbed[catchAll.target] = append(absorbed[catchAll.target], transaction)
+		totals[*catchAll] += transaction.Amount
+		absorbed[*catchAll] = append(absorbed[*catchAll], transaction)
 	}
 
 	for _, section := range m.Sections() {
@@ -115,8 +110,8 @@ func (m *Mapper) Aggregate(transactions []Transaction) (Result, error) {
 // rules inverts the mapper into a bank category -> budget cell lookup, and
 // rejects a bank category that two budget categories both claim - that would
 // silently count the same transactions twice.
-func (m *Mapper) rules() (map[string]rule, error) {
-	rules := make(map[string]rule)
+func (m *Mapper) rules() (map[string]target, error) {
+	rules := make(map[string]target)
 
 	for _, section := range m.Sections() {
 		for budgetCategory, bankCategories := range section.Categories {
@@ -125,13 +120,10 @@ func (m *Mapper) rules() (map[string]rule, error) {
 				if existing, taken := rules[key]; taken {
 					return nil, fmt.Errorf(
 						"bank category %q is mapped to both %q and %q",
-						bankCategory, existing.target.category, budgetCategory,
+						bankCategory, existing.category, budgetCategory,
 					)
 				}
-				rules[key] = rule{
-					target: target{table: section.Table, category: budgetCategory},
-					negate: section.Negate,
-				}
+				rules[key] = target{table: section.Table, category: budgetCategory}
 			}
 		}
 	}
@@ -142,7 +134,7 @@ func (m *Mapper) rules() (map[string]rule, error) {
 // fallback resolves a fallback category name to the cell it lives in. An empty
 // name means the section has no fallback; a name the budget does not know is an
 // error, because silently dropping transactions is worse than refusing to run.
-func (m *Mapper) fallback(category string) (*rule, error) {
+func (m *Mapper) fallback(category string) (*target, error) {
 	if strings.TrimSpace(category) == "" {
 		return nil, nil
 	}
@@ -150,22 +142,12 @@ func (m *Mapper) fallback(category string) (*rule, error) {
 	for _, section := range m.Sections() {
 		for budgetCategory := range section.Categories {
 			if normalize(budgetCategory) == normalize(category) {
-				return &rule{
-					target: target{table: section.Table, category: budgetCategory},
-					negate: section.Negate,
-				}, nil
+				return &target{table: section.Table, category: budgetCategory}, nil
 			}
 		}
 	}
 
 	return nil, fmt.Errorf("category %q is not in the budget", category)
-}
-
-func (r rule) sign(amount int64) int64 {
-	if r.negate {
-		return -amount
-	}
-	return amount
 }
 
 // summarize renders one line per bank category with its total, for the comment

@@ -4,7 +4,9 @@ import (
 	"budgetpipe/tables"
 	"fmt"
 	"log/slog"
+	"maps"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/xuri/excelize/v2"
@@ -14,6 +16,9 @@ type Budget struct {
 	workbook *excelize.File
 	path     string
 	sheet    string
+	// tables caches the sheet's tables by lower-cased name, so writing a whole
+	// month does not re-read them for every cell.
+	tables map[string]excelize.Table
 }
 
 type CellInput struct {
@@ -29,18 +34,9 @@ type TableBounds struct {
 	endCol, endRow     int
 }
 
-type TableCategories struct {
-	Income   []string
-	Fixed    []string
-	Variable []string
-}
-
 func NewBudget(path string, sheet string) (*Budget, error) {
 	wb, err := excelize.OpenFile(path)
 	if err != nil {
-		return nil, err
-	}
-	if err := wb.Close(); err != nil {
 		return nil, err
 	}
 
@@ -56,6 +52,7 @@ func NewBudget(path string, sheet string) (*Budget, error) {
 
 	return &Budget{
 		workbook: wb,
+		path:     path,
 		sheet:    sheet,
 	}, nil
 }
@@ -107,27 +104,20 @@ func (b *Budget) WriteToCellInTable(input CellInput) error {
 func (b *Budget) Save() error  { return b.workbook.Save() }
 func (b *Budget) Close() error { return b.workbook.Close() }
 
-func (b *Budget) TableCategories() (TableCategories, error) {
-	incomeCategories, err := b.getTableCategories(tables.Income)
-	if err != nil {
-		return TableCategories{}, fmt.Errorf("getting table categories: %w", err)
+// TableCategories returns the category labels of every budget table, keyed by
+// table name.
+func (b *Budget) TableCategories() (map[string][]string, error) {
+	categories := make(map[string][]string, len(tables.All))
+
+	for _, table := range tables.All {
+		labels, err := b.getTableCategories(table)
+		if err != nil {
+			return nil, fmt.Errorf("getting %s categories: %w", table, err)
+		}
+		categories[table] = labels
 	}
 
-	variableCategories, err := b.getTableCategories(tables.Variable)
-	if err != nil {
-		return TableCategories{}, fmt.Errorf("getting table categories: %w", err)
-	}
-
-	fixedCategories, err := b.getTableCategories(tables.Fixed)
-	if err != nil {
-		return TableCategories{}, fmt.Errorf("getting table categories: %w", err)
-	}
-
-	return TableCategories{
-		Income:   incomeCategories,
-		Variable: variableCategories,
-		Fixed:    fixedCategories,
-	}, nil
+	return categories, nil
 }
 
 func (b *Budget) getCellName(tableName, month, category string) (string, error) {
@@ -182,27 +172,29 @@ func (b *Budget) getTableCategories(tableName string) ([]string, error) {
 }
 
 func (b *Budget) getTableByName(tableName string) (*excelize.Table, error) {
-	excelTables, err := b.workbook.GetTables(b.sheet)
-	if err != nil {
-		return nil, err
-	}
+	if b.tables == nil {
+		excelTables, err := b.workbook.GetTables(b.sheet)
+		if err != nil {
+			return nil, err
+		}
 
-	for i := range excelTables {
-		if strings.EqualFold(excelTables[i].Name, tableName) {
-			return &excelTables[i], nil
+		b.tables = make(map[string]excelize.Table, len(excelTables))
+		for _, table := range excelTables {
+			b.tables[strings.ToLower(table.Name)] = table
 		}
 	}
 
-	fmt.Println("Found tables:")
-	for _, table := range excelTables {
-		fmt.Printf("  %s (%s)\n", table.Name, table.Range)
+	table, ok := b.tables[strings.ToLower(tableName)]
+	if !ok {
+		return nil, fmt.Errorf(
+			"table %q not found on sheet %q, found: %s",
+			tableName,
+			b.sheet,
+			strings.Join(slices.Sorted(maps.Keys(b.tables)), ", "),
+		)
 	}
 
-	return nil, fmt.Errorf(
-		"table %q not found on sheet %q",
-		tableName,
-		b.sheet,
-	)
+	return &table, nil
 }
 
 func (b *Budget) getTableBounds(table *excelize.Table) (*TableBounds, error) {

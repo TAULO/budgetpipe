@@ -1,13 +1,13 @@
 package cmd
 
 import (
+	"budgetpipe/flags"
 	"budgetpipe/internal/csv"
 	"budgetpipe/internal/model"
 	"budgetpipe/internal/xlsx"
-	"budgetpipe/tables"
+	"budgetpipe/months"
 	"fmt"
-	"slices"
-	"strings"
+	"log/slog"
 
 	"github.com/spf13/cobra"
 )
@@ -16,9 +16,17 @@ var addCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Import transactions data into your budget on a given month",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		month := cmd.Flags().Lookup("month").Value.String()
+		monthFlag, err := cmd.Flags().GetString(flags.Month)
+		if err != nil {
+			return err
+		}
 
-		monthFilePath, err := getDataCSVFilePath(month)
+		month, err := months.Parse(monthFlag)
+		if err != nil {
+			return err
+		}
+
+		monthFilePath, err := getDataCSVFilePath(month.Key())
 		if err != nil {
 			return fmt.Errorf("resolving csv data path: %w", err)
 		}
@@ -30,7 +38,7 @@ var addCmd = &cobra.Command{
 
 		mapperPath, err := getMapperFilePath()
 		if err != nil {
-			return fmt.Errorf("resolving csv data path: %w", err)
+			return fmt.Errorf("resolving mapper path: %w", err)
 		}
 
 		reader, err := csv.NewReader(monthFilePath)
@@ -38,86 +46,67 @@ var addCmd = &cobra.Command{
 			return fmt.Errorf("creating csv reader: %w", err)
 		}
 
-		budget, err := xlsx.NewBudget(budgetPath, getSheetName())
-		if err != nil {
-			return fmt.Errorf("creating budget: %w", err)
+		if err := reader.ValidateTransactions(); err != nil {
+			return fmt.Errorf("validating %s: %w", monthFilePath, err)
 		}
 
-		store := model.NewMapperStore(mapperPath)
-		mapper, err := store.Load()
+		mapper, err := model.NewMapperStore(mapperPath).Load()
 		if err != nil {
 			return fmt.Errorf("loading mapper: %w", err)
 		}
 
-		income := make(map[string]int64)
-		variable := make(map[string]int64)
-		fixed := make(map[string]int64)
-
-		for _, transaction := range reader.Transactions() {
-			csvCategory := strings.TrimSpace(transaction.Category)
-
-			for budgetCategory, bankCategories := range mapper.Income.Categories {
-				if slices.Contains(bankCategories, csvCategory) {
-					income[budgetCategory] += transaction.Amount
-					break
-				}
-			}
-
-			for budgetCategory, bankCategories := range mapper.Expenses.Variable {
-				if slices.Contains(bankCategories, csvCategory) {
-					variable[budgetCategory] += transaction.Amount
-					break
-				}
-			}
-
-			for budgetCategory, bankCategories := range mapper.Expenses.Fixed {
-				if slices.Contains(bankCategories, csvCategory) {
-					fixed[budgetCategory] += transaction.Amount
-					break
-				}
-			}
+		result, err := mapper.Aggregate(reader.Transactions())
+		if err != nil {
+			return fmt.Errorf("mapping transactions: %w", err)
 		}
 
-		for category, total := range income {
-			fmt.Printf("%s: %d\n", category, total)
+		budget, err := xlsx.NewBudget(budgetPath, getSheetName())
+		if err != nil {
+			return fmt.Errorf("creating budget: %w", err)
+		}
+		defer func() {
+			if err := budget.Close(); err != nil {
+				slog.Error("closing budget", "error", err)
+			}
+		}()
+
+		for _, entry := range result.Entries {
 			if err := budget.WriteToCellInTable(xlsx.CellInput{
-				TableName: tables.Income,
-				Category:  category,
-				Month:     month,
-				Value:     total,
+				TableName: entry.Table,
+				Category:  entry.Category,
+				Month:     month.Header(),
+				Value:     entry.Amount,
+				Comment:   entry.Comment,
 			}); err != nil {
-				return fmt.Errorf("writing income: %w", err)
+				return fmt.Errorf("writing %s: %w", entry.Category, err)
 			}
 		}
 
-		//
-		//unmappedTotal := reader.Total(unmapped)
-		//unmappedComments := reader.UnmappedComments(unmapped)
-		//budget.WriteToCellInTable()
-		//
-		//for category := range mapper.Income {
-		//	if err := write(category, totals[category], ""); err != nil {
-		//		return err
-		//	}
-		//}
-		//
-		//for category := range mapper.Expenses {
-		//	if err := write(category, totals[category], ""); err != nil {
-		//		return err
-		//	}
-		//}
-		//
-		//for _, transaction := range unmapped {
-		//	fmt.Println("UNMAPPED:", transaction)
-		//}
+		for _, transaction := range result.Unmapped {
+			slog.Warn(
+				"unmapped transaction",
+				"category", transaction.Category,
+				"amount", transaction.DisplayAmount,
+				"comment", transaction.Comment,
+			)
+		}
 
-		return budget.Save()
+		if err := budget.Save(); err != nil {
+			return fmt.Errorf("saving budget: %w", err)
+		}
+
+		fmt.Printf(
+			"imported %s: %d cells written, %d ignored, %d unmapped\n",
+			month, len(result.Entries), len(result.Ignored), len(result.Unmapped),
+		)
+
+		return nil
 	},
 }
 
 func init() {
-	addCmd.Flags().StringP("month", "m", "", "Month to import")
-	_ = addCmd.MarkFlagRequired("month")
+	addCmd.Flags().StringP(flags.Month, "m", "", "Month to import")
+	_ = addCmd.MarkFlagRequired(flags.Month)
 
 	rootCmd.AddCommand(addCmd)
 }

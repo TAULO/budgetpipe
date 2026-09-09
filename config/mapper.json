@@ -34,7 +34,7 @@
       "Overførelser": ["Anden indtægt", "Anden udgift"],
       "Diverse": ["Renter og afkast"]
     },
-    "fallback": ""
+    "fallback": "Andet (Diverse)"
   },
   "ignore": []
 }

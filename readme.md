@@ -41,18 +41,18 @@ need.
 ## Quick start
 
 ```sh
-budget init -C ~/budget          # scaffold a working directory
+budgetpipe init -C ~/budget          # scaffold a working directory
 # open ~/budget/budget.xlsx and type your category names in the first column
-budget sync -C ~/budget          # pull those categories into mapper.json
+budgetpipe sync -C ~/budget          # pull those categories into mapper.json
 # open ~/budget/mapper.json and list the bank categories for each of them
 cp ~/Downloads/export.csv ~/budget/data/aug.csv
-budget add -C ~/budget -m august # write August into the budget
+budgetpipe add -C ~/budget -m august # write August into the budget
 ```
 
 `add` prints what it did and warns about every transaction it could not place:
 
 ```
-2026/09/09 14:19:37 INFO writing transaction category=Løn amount=28952.24 month=AUG cell=J6
+2026/09/09 14:19:37 INFO writing transaction category=Løn amount=5230.24 month=AUG cell=J6
 ...
 2026/09/09 14:19:37 WARN unmapped transaction category="Hår- og hudpleje" amount=-240
 imported aug: 23 cells written, 0 ignored, 4 unmapped

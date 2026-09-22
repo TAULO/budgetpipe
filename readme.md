@@ -64,17 +64,6 @@ budgetpipe --help
 
 If that prints the command list, you're set.
 
-## Quick start
-
-```bash
-budgetpipe init -C ~/budget          # scaffold a working directory
-# open ~/budget/budget.xlsx and type your category names in the first column
-budgetpipe sync -C ~/budget          # pull those categories into mapper.json
-# open ~/budget/mapper.json and list the bank categories for each of them
-cp ~/Downloads/export.csv ~/budget/data/aug.csv
-budgetpipe add -C ~/budget -m august # write August into the budget
-```
-
 ## Updating
 
 ```bash

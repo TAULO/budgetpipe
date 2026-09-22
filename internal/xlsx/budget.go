@@ -1,13 +1,14 @@
 package xlsx
 
 import (
-	"budgetpipe/tables"
 	"fmt"
 	"log/slog"
 	"maps"
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/TAULO/budgetpipe/tables"
 
 	"github.com/xuri/excelize/v2"
 )

@@ -1,4 +1,4 @@
-module budgetpipe
+module github.com/TAULO/budgetpipe
 
 go 1.26.5
 

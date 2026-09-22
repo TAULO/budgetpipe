@@ -1,8 +1,9 @@
 package main
 
 import (
-	"budgetpipe/cmd"
 	_ "embed"
+
+	"github.com/TAULO/budgetpipe/cmd"
 )
 
 //go:embed assets/budget-template.xlsx

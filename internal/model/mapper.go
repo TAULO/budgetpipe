@@ -1,11 +1,12 @@
 package model
 
 import (
-	"budgetpipe/tables"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/TAULO/budgetpipe/tables"
 )
 
 type Expenses struct {

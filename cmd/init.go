@@ -1,13 +1,14 @@
 package cmd
 
 import (
-	"budgetpipe/internal/model"
-	"budgetpipe/internal/xlsx"
-	"budgetpipe/months"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/TAULO/budgetpipe/internal/model"
+	"github.com/TAULO/budgetpipe/internal/xlsx"
+	"github.com/TAULO/budgetpipe/months"
 
 	"github.com/spf13/cobra"
 )

@@ -1,12 +1,13 @@
 package cmd
 
 import (
-	"budgetpipe/filenames"
-	"budgetpipe/flags"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/TAULO/budgetpipe/filenames"
+	"github.com/TAULO/budgetpipe/flags"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

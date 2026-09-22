@@ -1,13 +1,15 @@
 package cmd
 
 import (
-	"budgetpipe/flags"
-	"budgetpipe/internal/csv"
-	"budgetpipe/internal/model"
-	"budgetpipe/internal/xlsx"
-	"budgetpipe/months"
 	"fmt"
 	"log/slog"
+
+	"github.com/TAULO/budgetpipe/internal/csv"
+	"github.com/TAULO/budgetpipe/internal/model"
+	"github.com/TAULO/budgetpipe/internal/xlsx"
+	"github.com/TAULO/budgetpipe/months"
+
+	"github.com/TAULO/budgetpipe/flags"
 
 	"github.com/spf13/cobra"
 )

@@ -15,7 +15,7 @@ import (
 	"github.com/beevik/guid"
 )
 
-import "budgetpipe/internal/model"
+import "github.com/TAULO/budgetpipe/internal/model"
 
 type Reader struct {
 	transactions []model.Transaction

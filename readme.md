@@ -31,12 +31,57 @@ add
 
 ## Install
 
-```sh
-go build -o budget .
+```bash
+go install github.com/TAULO/budgetpipe@latest
 ```
 
-The budget template is embedded in the binary, so the single file is all you
-need.
+This downloads, builds, and installs the `budgetpipe` binary into your Go bin directory (`~/go/bin` by default).
+
+### Put it on your PATH
+
+`go install` places binaries in `$(go env GOPATH)/bin`, which often isn't on your `PATH` yet.
+
+Confirm the binary is there:
+
+```bash
+ls "$(go env GOPATH)/bin"
+```
+
+Then add that directory to your `PATH`. For **zsh** (the macOS default):
+
+```bash
+echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+For **bash**, use `~/.bashrc` (or `~/.bash_profile`) instead.
+
+### Verify
+
+```bash
+budgetpipe --help
+```
+
+If that prints the command list, you're set.
+
+## Quick start
+
+```bash
+budgetpipe init -C ~/budget          # scaffold a working directory
+# open ~/budget/budget.xlsx and type your category names in the first column
+budgetpipe sync -C ~/budget          # pull those categories into mapper.json
+# open ~/budget/mapper.json and list the bank categories for each of them
+cp ~/Downloads/export.csv ~/budget/data/aug.csv
+budgetpipe add -C ~/budget -m august # write August into the budget
+```
+
+## Updating
+
+```bash
+go install github.com/TAULO/budgetpipe@latest
+```
+
+A brand-new release can take a few minutes to show up through `@latest`. To grab it right away, install the exact tag instead, e.g. `go install github.com/TAULO/budgetpipe@v0.1.1`.
 
 ## Quick start
 
